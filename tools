@@ -1,0 +1,142 @@
+#!/bin/bash
+find_iso_dir(){
+	echo -e "\033[33mSearch iso directory ...... \033[0m"
+	declare -a ISO_DIR
+	COUNT=0
+	for i in `find / -type d \( -path /run -o -path /proc -o -path /dev -o -path /boot -o -path /sys \) -prune -o -name filesystem.squashfs -print 2>/dev/null | grep /live/filesystem.squashfs | sed 's/live\/filesystem.squashfs//g'`;
+	do
+		NUM=$(($COUNT + 1))
+		ISO_DIR[$COUNT]=$i
+		echo "$NUM: ${ISO_DIR[$COUNT]}"
+		COUNT=$(($COUNT + 1))
+	done
+	read -p "chose your dir:"  NUMBER
+	if [ -n "`echo $NUMBER | sed 's/[0-9]//g'`" ];then
+		echo -e "\033[31mInput is ERROR!!! \033[0m"
+		exit 11
+	fi	
+	TARGET_DIR=${ISO_DIR[$((NUMBER - 1))]}
+	if [ -z $TARGET_DIR ];then
+        	echo -e "\033[31mInput is ERROR!!! \033[0m"
+        	exit 11
+	fi
+	echo ">>>>>>>>>>"
+	echo "Chose directory $TARGET_DIR"
+	echo ">>>>>>>>>>"
+	echo ""
+}
+
+chose_arch(){
+	echo "1. amd64"
+	echo "2. arm64"
+	echo "3. mips64"
+	read -p "chose arch:" ISO_ARCH
+	case $ISO_ARCH in 
+		1) TARGET_ARCH=amd64
+		;;
+		2) TARGET_ARCH=arm64
+		;;
+		3) TARGET_ARCH=mips64el
+		;;
+		*) echo -e "\033[31mInput is ERROR!!! \033[0m"
+		   exit 11
+		;;
+	esac
+	echo ">>>>>>>>>>"	
+	echo "Chose arch $TARGET_ARCH"
+	echo ">>>>>>>>>>"
+	echo ""
+}
+
+chose_oem_file(){
+	declare -a TMP_OEM_FILE
+	COUNT=0
+	for i in `ls oem-file | grep ".tgz$" | sed 's/.tgz//g'`;do
+		NUM=$(($COUNT + 1 ))
+		TMP_OEM_FILE[$COUNT]=$i
+		echo "$NUM: ${TMP_OEM_FILE[$COUNT]}"
+		COUNT=$(($COUNT + 1))
+	done
+	read -p "chose active mode: " ACTIVE_MODE
+	OEM_FILE=${TMP_OEM_FILE[$((ACTIVE_MODE - 1))]}.tgz
+	if [ -z $OEM_FILE ];then
+        	echo -e "\033[31mInput is ERROR!!! \033[0m"
+        	exit 11
+	fi
+}
+
+tar_oem_file(){
+        tar zxvf oem-file/$OEM_FILE -C $TARGET_DIR >/dev/null
+	if [ $? = 0 ];then
+		echo ">>>>>>>>>>"
+		echo "tar $OEM_FILE to $TARGET_DIR"	
+		echo -e "\033[32moem file extract finish \033[0m"
+		echo ">>>>>>>>>>"
+		echo ""
+	else
+		echo -e "\033[31moem file extract faild ! \033[0m"
+		exit 12
+	fi
+        cp agent/$TARGET_ARCH/*.deb $TARGET_DIR/oem/deb
+	KMS_JOB_DIR=`find $TARGET_DIR -name *_kms.job`
+}
+
+change_kms_authcode(){
+	read -p "authcode(default $1): " KMS_AUTHCODE
+	if [ ! $KMS_AUTHCODE ]; then
+		KMS_AUTHCODE=$1
+	fi
+	sed -i 's/KMS_AUTHCODE/'$KMS_AUTHCODE'/g' $KMS_JOB_DIR
+}
+
+change_kms_server(){
+	read -p "server IP(default $1): " KMS_SERVER_IP
+	if [ ! $KMS_SERVER_IP ];then
+		KMS_SERVER_IP=$1
+	fi
+	sed -i 's/KMS_SERVER_IP/'$KMS_SERVER_IP'/g' $KMS_JOB_DIR
+}
+
+change_kms_port(){
+	read -p "server port(defautl $1) : " KMS_SERVER_PORT
+	if [ ! $KMS_SERVER_PORT ];then
+		KMS_SERVER_PORT=$1
+	fi
+	sed -i 's/KMS_SERVER_PORT/'$KMS_SERVER_PORT'/g' $KMS_JOB_DIR
+}
+
+change_kms_snnumber(){
+        echo  "1. MAC (ifconfig | grep ether | awk '{print \$2}' | sed 's/://g' | head -n 1)
+2. SN_NUMBER1 (dmidecode -s system-serial-number)
+3. SN_NUMBER2 (dmidecode -s chassis-serial-number)"
+	read -p "How to get sn number: " GET_SN_NUMBER
+	while [ -n "`echo $GET_SN_NUMBER | sed 's/[0-9]//g'`"  ] || [ -z $GET_SN_NUMBER ]  || [ ! $GET_SN_NUMBER -gt 0 ] || [ ! $GET_SN_NUMBER -lt 4 ];do
+		read -p "How to get sn number: " GET_SN_NUMBER
+	done
+	case $GET_SN_NUMBER in
+		1) KMS_SN_NUMBER="ifconfig | grep ether | awk '{print \$2}' | sed 's\/\:\/\/g' | head -n 1"
+			;;
+		2) KMS_SN_NUMBER="dmidecode -s system-serial-number"
+			;;
+		3) KMS_SN_NUMBER="dmidecode -s chassis-serial-number"
+			;;
+	esac
+	sed -i "s/KMS_SN_NUMBER/$KMS_SN_NUMBER/g" $KMS_JOB_DIR
+}
+
+change_kms(){
+	change_kms_authcode "$1"
+	change_kms_server "$2"
+	change_kms_port "$3"
+	change_kms_snnumber
+}
+
+open_check_mode(){
+	CHECK_MODE_STAT=`grep system_check_mode $TARGET_DIR/oem/settings.ini 2>/dev/null`
+	if [ -z "$CHECK_MODE_STAT" ];then
+		echo system_check_mode=true >> $TARGET_DIR/oem/settings.ini
+	else
+		sed -i "s/${CHECK_MODE_STAT}/system_check_mode=true/g" $TARGET_DIR/oem/settings.ini
+	fi
+
+}

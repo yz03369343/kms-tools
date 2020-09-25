@@ -1,0 +1,15 @@
+#!/bin/bash 
+#echo "LANG=zh_CN.UTF-8" > /home/test/.config/locale.conf
+#echo "LANGUAGE=zh_CN" >> /home/test/.config/locale.conf
+
+#echo "export LANG=\"zh_CN.UTF-8\";" > /home/test/.dde_env
+#echo "export LANGUAGE=\"zh_CN\";" >> /home/test/.dde_env
+cat > /home/test/.config/locale.conf  << EOF
+LANG=zh_CN.UTF-8
+LANGUAGE=zh_CN
+EOF
+
+cat > /home/test/.dde_env  << EOF
+export LANG="zh_CN.UTF-8";
+export LANGUAGE="zh_CN";
+EOF
