@@ -1,0 +1,40 @@
+kms工具可放置于任何路径执行
+必须进入到脚本所在路径后，通过./add-kms.sh 或者./make-iso.sh运行
+
+add-kms.sh
+用于给iso增加kms相关配置
+1. 挂载iso文件，并将iso文件中的所有内容复制到一个工作目录。
+2. 执行脚本，脚本会扫描磁盘中iso文件所在路径
+3. 选择iso的架构
+4. 选择激活所需的模式
+
+make-iso.sh
+用于iso的打包
+执行后会自动检索iso路径，打包后的会存放在脚本所在路径下的iso文件夹中。
+请自行修改新生成的iso文件名。
+
+——————————————————————————————
+关于激活模式
+01_installer：用于安装过程中激活,适用于PXE、U盘、光盘等有安装过程的场景。
+02_checkmode-auto：用于安装后进入到审核模式的自动激活，适用于拷盘等全部场景。
+03_checkmode-notauto：用于安装后进入到审核模式的非自动激活，适用于厂商有在系统中跑老化等定制需求的场景。
+其余：为厂商适配过的激活文件
+
+——————————————————————————————
+自行配置
+支持打包自定义的配置，可使用命令 tar czvf "OEM_NAME".tgz "OEM_DIR" 打包自定的oem文件，打包好的文件名必须以.tgz为结尾放置在oem-file目录下。
+放置好tgz文件后，自行编辑add-kms.sh，在case结构下添加所需的操作。
+如需把配置并入主线版本，请联系于峥
+
+______________________________
+可调用函数
+find_iso_dir 寻找iso路径
+chose_arch 选择架构
+chose_oem_file 选择oem文件
+tar_oem_file 解压oem文件
+change_kms_authcode "AUTHCODE" 修改KMS文件口令，可跟默认参数
+change_kms_server "SERVER_IP" 修改KMS文件服务器地址，可跟默认参数
+change_kms_port "SERVER_PORT" 修改KMS文件服务器端口，可跟默认参数
+change_kms_snnumber 修改KMS文件获取机器SN的方式
+change_kms "AUTHCODE" "SERVER_IP" "SERVER_PORT" 修改KMS文件的所有内容，可跟默认参数
+open_check_mode 打开settings.ini中的审核模式
