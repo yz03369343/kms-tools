@@ -77,7 +77,10 @@ tar_oem_file(){
 		echo -e "\033[31moem file extract faild ! \033[0m"
 		exit 12
 	fi
-        cp agent/$TARGET_ARCH/*.deb $TARGET_DIR/oem/deb
+	if [ $KMS_ACTIVE != "N" ];then
+		mkdir -p $TARGET_DIR/oem/deb 2>/dev/null
+        	cp agent/$TARGET_ARCH/*.deb $TARGET_DIR/oem/deb/
+	fi
 	KMS_JOB_DIR=`find $TARGET_DIR -name *_kms.job`
 }
 
@@ -107,18 +110,16 @@ change_kms_port(){
 
 change_kms_snnumber(){
         echo  "1. MAC (ifconfig | grep ether | awk '{print \$2}' | sed 's/://g' | head -n 1)
-2. SN_NUMBER1 (dmidecode -s system-serial-number)
-3. SN_NUMBER2 (dmidecode -s chassis-serial-number)"
+2. SN_NUMBER (dmidecode -s system-serial-number)"
 	read -p "How to get sn number: " GET_SN_NUMBER
-	while [ -n "`echo $GET_SN_NUMBER | sed 's/[0-9]//g'`"  ] || [ -z $GET_SN_NUMBER ]  || [ ! $GET_SN_NUMBER -gt 0 ] || [ ! $GET_SN_NUMBER -lt 4 ];do
+	while [ -n "`echo $GET_SN_NUMBER | sed 's/[0-9]//g'`" ] || [ -z $GET_SN_NUMBER ]  || [ ! $GET_SN_NUMBER -gt 0 ] || [ ! $GET_SN_NUMBER -lt 3 ];do
+		echo -e "\033[31mInput is ERROR!!! \033[0m"
 		read -p "How to get sn number: " GET_SN_NUMBER
 	done
 	case $GET_SN_NUMBER in
 		1) KMS_SN_NUMBER="ifconfig | grep ether | awk '{print \$2}' | sed 's\/\:\/\/g' | head -n 1"
 			;;
 		2) KMS_SN_NUMBER="dmidecode -s system-serial-number"
-			;;
-		3) KMS_SN_NUMBER="dmidecode -s chassis-serial-number"
 			;;
 	esac
 	sed -i "s/KMS_SN_NUMBER/$KMS_SN_NUMBER/g" $KMS_JOB_DIR
