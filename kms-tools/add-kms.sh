@@ -21,7 +21,7 @@ case $OEM_FILE in
 	   open_check_mode
            change_kms "Vlc1cGIyNTBaV05v" "10.10.58.44" "8600" 
 	   ;;
-	thtf*.tgz|lenovo*.tgz|100trust-kms*.tgz|baode*.tgz) tar_oem_file
+	thtf*.tgz|lenovo*.tgz|100trust-kms*.tgz|baode*.tgz|insur*.tgz) tar_oem_file
 	   open_check_mode
 	   ;;
 	100trust-nokms*.tgz) KMS_ACTIVE=N

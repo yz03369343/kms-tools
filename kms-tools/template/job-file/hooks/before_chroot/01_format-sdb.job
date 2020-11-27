@@ -1,0 +1,13 @@
+#!/bin/bash
+if [ -b /dev/sdb  ];then
+	SDB_PART=(`parted /dev/sdb p | grep "^ " | awk '{print $1}'`)
+	if [ ${#SDB_PART[@]} != 0 ];then
+		for Part in ${SDB_PART[@]};do
+			parted /dev/sdb rm $Part 2>/dev/null
+		done
+	fi
+	parted /dev/sdb mklabel msdos y 2>/dev/null
+	parted /dev/sdb mkpart p 0% 100% 2>/dev/null
+	sync && sleep 5 && sync
+	mkfs.ntfs -f -L DATA /dev/sdb1
+fi
